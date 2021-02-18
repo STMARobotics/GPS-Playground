@@ -20,11 +20,10 @@ public class GPS implements Closeable {
         thread = new Thread(() -> {
             byte[] highByte = new byte[1];
             byte[] lowByte = new byte[1];
-            SentenceFactory sf = SentenceFactory.getInstance();
             while (!stop) {
                 try {
-                    // i2c.read(0xFD, 1, highByte);
-                    // i2c.read(0xFE, 1, lowByte);
+                    i2c.read(0xFD, 1, highByte);
+                    i2c.read(0xFE, 1, lowByte);
                     int highUint = Byte.toUnsignedInt(highByte[0]);
                     int lowUint = Byte.toUnsignedInt(lowByte[0]);
 

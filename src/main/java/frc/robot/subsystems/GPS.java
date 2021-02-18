@@ -27,15 +27,15 @@ public class GPS implements Closeable {
                     int highUint = Byte.toUnsignedInt(highByte[0]);
                     int lowUint = Byte.toUnsignedInt(lowByte[0]);
 
-                    int bytesAvailable = (short) highUint << 8 | lowUint;
+                    int bytesAvailable = highUint << 8 | lowUint;
                     // System.out.println("Bytes available: " + bytesAvailable + " > " + highUint + ", " + lowUint);
-                    if (bytesAvailable <= 0 || highUint == 0x7F || highUint == 0xFF || lowUint == 0x7F ||lowUint == 0xFF) {
+                    if (bytesAvailable <= 0 || highUint == 0x7F || highUint == 0xFF || lowUint == 0x7F || lowUint == 0xFF) {
                        // No data right now
 
                     } else {
                         // System.out.println("Bytes Available: " + bytesAvailable);
                         byte[] buffer = new byte[1];
-                        i2c.readOnly(buffer, 1);
+                        i2c.read(0xFF, 1, buffer);
                         int chara = Byte.toUnsignedInt(buffer[0]);
                         if (chara != 0xFF) {
                             // No data

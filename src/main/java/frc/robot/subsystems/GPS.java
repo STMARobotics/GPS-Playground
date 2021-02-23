@@ -2,9 +2,11 @@ package frc.robot.subsystems;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.I2C.Port;
+import frc.robot.subsystems.gps.messages.UBXMessage;
 import net.sf.marineapi.nmea.parser.SentenceFactory;
 
 public class GPS implements Closeable {
@@ -18,30 +20,31 @@ public class GPS implements Closeable {
 
         // TODO - Try removing the thread and using TimedRobot.addPeriodic
         thread = new Thread(() -> {
-            byte[] highByte = new byte[1];
-            byte[] lowByte = new byte[1];
+
+            UBXMessage monVerMsg = new UBXMessage((byte)0x0A, (byte)0x04);
+            i2c.writeBulk(monVerMsg.createMessage());
+            
+            byte[] bytesAvail = new byte[2];
             while (!stop) {
                 try {
-                    i2c.read(0xFD, 1, highByte);
-                    i2c.read(0xFE, 1, lowByte);
-                    int highUint = Byte.toUnsignedInt(highByte[0]);
-                    int lowUint = Byte.toUnsignedInt(lowByte[0]);
+                    i2c.read(0xFD, 2, bytesAvail);
+                    int highUint = Byte.toUnsignedInt(bytesAvail[0]);
+                    int lowUint = Byte.toUnsignedInt(bytesAvail[1]);
 
                     int bytesAvailable = highUint << 8 | lowUint;
-                    // System.out.println("Bytes available: " + bytesAvailable + " > " + highUint + ", " + lowUint);
-                    if (bytesAvailable <= 0 || highUint == 0x7F || highUint == 0xFF || lowUint == 0x7F || lowUint == 0xFF) {
-                       // No data right now
-
-                    } else {
-                        // System.out.println("Bytes Available: " + bytesAvailable);
-                        byte[] buffer = new byte[1];
-                        i2c.read(0xFF, 1, buffer);
-                        int chara = Byte.toUnsignedInt(buffer[0]);
-                        if (chara != 0xFF) {
-                            // No data
-                            // String stringData = new String(chara, StandardCharsets.ISO_8859_1);
-                            System.out.println("Read String: " + chara);
+                    // System.out.println("Bytes available: " + bytesAvailable);
+                    if (bytesAvailable > 0) {
+                        System.out.print("Bytes Available: " + bytesAvailable);
+                        byte[] buffer = new byte[100];
+                        int len = Math.min(buffer.length, bytesAvailable);
+                        if (i2c.read(0xFF, len, buffer)) {
+                            System.err.println("Failed to read from device");
+                        } else {
+                            System.out.println(" - Read " + len + " bytes");
+                            System.out.println(new String(buffer, StandardCharsets.ISO_8859_1));
                         }
+                    } else {
+                        System.out.println("No bytes available");
                     }
                     Thread.sleep(25);
                 } catch (Exception e) {
@@ -56,6 +59,14 @@ public class GPS implements Closeable {
     @Override
     public void close() throws IOException {
         stop = true;
+    }
+
+    byte[] toByteArray(int[] array) {
+        byte[] result = new byte[array.length];
+        for(int i = 0; i < array.length; i++) {
+            result[i] = (byte)array[i];
+        }
+        return result;
     }
     
 }

@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.I2C.Port;
 import frc.robot.subsystems.gps.messages.UBXMessage;
-import net.sf.marineapi.nmea.parser.SentenceFactory;
 
 public class GPS implements Closeable {
 
@@ -28,10 +27,8 @@ public class GPS implements Closeable {
             while (!stop) {
                 try {
                     i2c.read(0xFD, 2, bytesAvail);
-                    int highUint = Byte.toUnsignedInt(bytesAvail[0]);
-                    int lowUint = Byte.toUnsignedInt(bytesAvail[1]);
 
-                    int bytesAvailable = highUint << 8 | lowUint;
+                    int bytesAvailable = (bytesAvail[0] & 0xFF) << 8 | (bytesAvail[1] & 0xFF);
                     // System.out.println("Bytes available: " + bytesAvailable);
                     if (bytesAvailable > 0) {
                         System.out.print("Bytes Available: " + bytesAvailable);
